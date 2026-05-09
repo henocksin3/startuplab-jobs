@@ -11,6 +11,10 @@ export interface NorthbaseCompany {
   logoFileUrl: string | null;
   linkedinUrl: string | null;
   startupStatus: string[];
+  industry: string[];
+  hotTags: string[];
+  subTags: string[];
+  impactCategory: string | null;
   membershipDateIn: string | null;
   membershipDateOut: string | null;
   acceleratorBatch: string | null;
@@ -37,6 +41,11 @@ export async function fetchEverConnectedCompanies(): Promise<NorthbaseCompany[]>
       logo_file_url,
       linkedin_url,
       startup_status,
+      industry,
+      hot_tags,
+      sl_impactcategory,
+      energy_tag, fintech_tag, mobility_tag, climate_tag, healthcare_tag,
+      consumer_tag, enterprise_tag, defence_security_tag, construction_tag,
       sl_membership_date_in,
       sl_membership_date_out,
       accelerator_batch,
@@ -57,19 +66,38 @@ export async function fetchEverConnectedCompanies(): Promise<NorthbaseCompany[]>
     ORDER BY company_name
   `) as Array<Record<string, unknown>>;
 
-  return rows.map((r) => ({
-    airtableId: (r.airtable_id as string | null) ?? null,
-    orgNr: (r.org_nr as string | null) ?? null,
-    companyName: r.company_name as string,
-    website: (r.website as string | null) ?? null,
-    oneliner: (r.oneliner as string | null) ?? null,
-    description: (r.company_description as string | null) ?? null,
-    logoFileUrl: (r.logo_file_url as string | null) ?? null,
-    linkedinUrl: (r.linkedin_url as string | null) ?? null,
-    startupStatus: Array.isArray(r.startup_status) ? (r.startup_status as string[]) : [],
-    membershipDateIn: (r.sl_membership_date_in as string | null) ?? null,
-    membershipDateOut: (r.sl_membership_date_out as string | null) ?? null,
-    acceleratorBatch: (r.accelerator_batch as string | null) ?? null,
-    investmentDate: (r.investment_date as string | null) ?? null,
-  }));
+  const arr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]).filter(Boolean) : []);
+
+  return rows.map((r) => {
+    const subTags = [
+      ...arr(r.energy_tag),
+      ...arr(r.fintech_tag),
+      ...arr(r.mobility_tag),
+      ...arr(r.climate_tag),
+      ...arr(r.healthcare_tag),
+      ...arr(r.consumer_tag),
+      ...arr(r.enterprise_tag),
+      ...arr(r.defence_security_tag),
+      ...arr(r.construction_tag),
+    ];
+    return {
+      airtableId: (r.airtable_id as string | null) ?? null,
+      orgNr: (r.org_nr as string | null) ?? null,
+      companyName: r.company_name as string,
+      website: (r.website as string | null) ?? null,
+      oneliner: (r.oneliner as string | null) ?? null,
+      description: (r.company_description as string | null) ?? null,
+      logoFileUrl: (r.logo_file_url as string | null) ?? null,
+      linkedinUrl: (r.linkedin_url as string | null) ?? null,
+      startupStatus: arr(r.startup_status),
+      industry: arr(r.industry),
+      hotTags: arr(r.hot_tags),
+      subTags: [...new Set(subTags)],
+      impactCategory: (r.sl_impactcategory as string | null) ?? null,
+      membershipDateIn: (r.sl_membership_date_in as string | null) ?? null,
+      membershipDateOut: (r.sl_membership_date_out as string | null) ?? null,
+      acceleratorBatch: (r.accelerator_batch as string | null) ?? null,
+      investmentDate: (r.investment_date as string | null) ?? null,
+    };
+  });
 }

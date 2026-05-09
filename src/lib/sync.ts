@@ -5,6 +5,8 @@ import { companies, jobs, syncRuns } from "./db/schema";
 import { getAdapter } from "./adapters";
 import { fetchEverConnectedCompanies } from "./northbase";
 import { slugify, normalizeWebsite, logoUrlFromWebsite } from "./slug";
+import { detectSeniority } from "./seniority";
+import { ddgIconUrl } from "./logo";
 
 export interface AtsConfigEntry {
   atsType: string;
@@ -13,12 +15,31 @@ export interface AtsConfigEntry {
 
 export type AtsConfigMap = Record<string, AtsConfigEntry>;
 
+async function withConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (true) {
+        const i = next++;
+        if (i >= items.length) break;
+        out[i] = await fn(items[i]);
+      }
+    }),
+  );
+  return out;
+}
+
 export async function syncCompaniesFromNorthbase(atsConfigs: AtsConfigMap): Promise<{ count: number; withAts: number }> {
   const rows = await fetchEverConnectedCompanies();
   let withAts = 0;
   const usedSlugs = new Set<string>();
 
-  for (const r of rows) {
+  // Logo verification runs as a separate cron (probeHasLogo would burn the subrequest budget). For now,
+  // every company gets the DDG icon URL; the client-side <CompanyLogo> renders initials on error.
+
+  for (let idx = 0; idx < rows.length; idx++) {
+    const r = rows[idx];
     let slug = slugify(r.companyName);
     if (!slug) continue;
     let candidate = slug;
@@ -33,38 +54,31 @@ export async function syncCompaniesFromNorthbase(atsConfigs: AtsConfigMap): Prom
     const ats = atsConfigs[slug];
     if (ats) withAts++;
     const website = normalizeWebsite(r.website);
-    const logo = logoUrlFromWebsite(website);
+    const logo = ddgIconUrl(website);
+
+    const baseCols = {
+      orgNr: r.orgNr,
+      name: r.companyName,
+      website,
+      logoUrl: logo,
+      hasLogo: !!logo,
+      linkedinUrl: r.linkedinUrl,
+      description: r.oneliner ?? r.description,
+      startupStatus: r.startupStatus,
+      industry: r.industry,
+      hotTags: r.hotTags,
+      subTags: r.subTags,
+      impactCategory: r.impactCategory,
+      atsType: ats?.atsType ?? null,
+      atsConfig: ats?.atsConfig ?? {},
+    };
 
     await db
       .insert(companies)
-      .values({
-        id,
-        slug,
-        orgNr: r.orgNr,
-        name: r.companyName,
-        website,
-        logoUrl: logo,
-        linkedinUrl: r.linkedinUrl,
-        description: r.oneliner ?? r.description,
-        startupStatus: r.startupStatus,
-        atsType: ats?.atsType ?? null,
-        atsConfig: ats?.atsConfig ?? {},
-        active: true,
-      })
+      .values({ id, slug, ...baseCols, active: true })
       .onConflictDoUpdate({
         target: companies.slug,
-        set: {
-          orgNr: r.orgNr,
-          name: r.companyName,
-          website,
-          logoUrl: logo,
-          linkedinUrl: r.linkedinUrl,
-          description: r.oneliner ?? r.description,
-          startupStatus: r.startupStatus,
-          atsType: ats?.atsType ?? null,
-          atsConfig: ats?.atsConfig ?? {},
-          updatedAt: new Date(),
-        },
+        set: { ...baseCols, updatedAt: new Date() },
       });
   }
 
@@ -113,38 +127,35 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
       processed++;
       for (const j of fetched) {
         const id = `job_${co.slug}_${adapter.name}_${j.externalId}`;
+        const seniority = detectSeniority(j.title);
+        const insertVals = {
+          id,
+          companyId: co.id,
+          externalId: j.externalId,
+          source: adapter.name,
+          title: j.title,
+          location: j.location ?? null,
+          department: j.department ?? null,
+          employmentType: j.employmentType ?? null,
+          seniority,
+          remote: j.remote ?? false,
+          description: j.description ?? null,
+          applyUrl: j.applyUrl,
+          postedAt: j.postedAt ?? null,
+          lastSeenAt: new Date(),
+          active: true,
+        };
+        const updateVals = { ...insertVals };
+        delete (updateVals as Partial<typeof insertVals>).id;
+        delete (updateVals as Partial<typeof insertVals>).companyId;
+        delete (updateVals as Partial<typeof insertVals>).externalId;
+        delete (updateVals as Partial<typeof insertVals>).source;
         await db
           .insert(jobs)
-          .values({
-            id,
-            companyId: co.id,
-            externalId: j.externalId,
-            source: adapter.name,
-            title: j.title,
-            location: j.location ?? null,
-            department: j.department ?? null,
-            employmentType: j.employmentType ?? null,
-            remote: j.remote ?? false,
-            description: j.description ?? null,
-            applyUrl: j.applyUrl,
-            postedAt: j.postedAt ?? null,
-            lastSeenAt: new Date(),
-            active: true,
-          })
+          .values(insertVals)
           .onConflictDoUpdate({
             target: [jobs.companyId, jobs.source, jobs.externalId],
-            set: {
-              title: j.title,
-              location: j.location ?? null,
-              department: j.department ?? null,
-              employmentType: j.employmentType ?? null,
-              remote: j.remote ?? false,
-              description: j.description ?? null,
-              applyUrl: j.applyUrl,
-              postedAt: j.postedAt ?? null,
-              lastSeenAt: new Date(),
-              active: true,
-            },
+            set: updateVals,
           });
         upserted++;
       }

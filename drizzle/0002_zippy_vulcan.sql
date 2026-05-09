@@ -1,0 +1,1 @@
+ALTER TABLE `companies` ADD `has_logo` integer DEFAULT false NOT NULL;

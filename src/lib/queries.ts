@@ -7,6 +7,7 @@ export interface JobFilter {
   company?: string;
   location?: string;
   department?: string;
+  seniority?: string;
   remote?: boolean;
 }
 
@@ -19,6 +20,7 @@ export async function listActiveJobs(f: JobFilter = {}) {
   if (f.company) where.push(eq(companies.slug, f.company));
   if (f.location) where.push(like(sql`lower(${jobs.location})`, `%${f.location.toLowerCase()}%`));
   if (f.department) where.push(like(sql`lower(${jobs.department})`, `%${f.department.toLowerCase()}%`));
+  if (f.seniority) where.push(eq(jobs.seniority, f.seniority));
   if (f.remote) where.push(eq(jobs.remote, true));
 
   return db
@@ -28,6 +30,7 @@ export async function listActiveJobs(f: JobFilter = {}) {
       location: jobs.location,
       department: jobs.department,
       employmentType: jobs.employmentType,
+      seniority: jobs.seniority,
       remote: jobs.remote,
       applyUrl: jobs.applyUrl,
       postedAt: jobs.postedAt,
@@ -35,7 +38,10 @@ export async function listActiveJobs(f: JobFilter = {}) {
       company: {
         slug: companies.slug,
         name: companies.name,
+        website: companies.website,
         logoUrl: companies.logoUrl,
+        hotTags: companies.hotTags,
+        industry: companies.industry,
       },
     })
     .from(jobs)
@@ -65,6 +71,8 @@ export async function listCompanies(opts: { onlyHiring?: boolean } = {}) {
       name: companies.name,
       logoUrl: companies.logoUrl,
       website: companies.website,
+      hotTags: companies.hotTags,
+      industry: companies.industry,
       jobCount: sql<number>`coalesce(sum(case when ${jobs.active} then 1 else 0 end), 0)`.as("job_count"),
     })
     .from(companies)
