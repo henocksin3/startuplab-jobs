@@ -213,7 +213,7 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
 
   // Hide jobs that haven't been refreshed by the company in over a year. These are typically
   // forgotten postings on otherwise abandoned career pages.
-  const STALENESS_DAYS = 365;
+  const STALENESS_DAYS = 180;
   const staleCutoff = Math.floor(Date.now() / 1000) - STALENESS_DAYS * 86400;
   await db
     .update(jobs)
