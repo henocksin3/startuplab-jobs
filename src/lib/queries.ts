@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { db } from "./db";
 import { companies, jobs } from "./db/schema";
 
@@ -13,11 +13,12 @@ export interface JobFilter {
 export async function listActiveJobs(f: JobFilter = {}) {
   const where = [eq(jobs.active, true)];
   if (f.q) {
-    where.push(or(ilike(jobs.title, `%${f.q}%`), ilike(jobs.description, `%${f.q}%`))!);
+    const pat = `%${f.q.toLowerCase()}%`;
+    where.push(or(like(sql`lower(${jobs.title})`, pat), like(sql`lower(${jobs.description})`, pat))!);
   }
   if (f.company) where.push(eq(companies.slug, f.company));
-  if (f.location) where.push(ilike(jobs.location, `%${f.location}%`));
-  if (f.department) where.push(ilike(jobs.department, `%${f.department}%`));
+  if (f.location) where.push(like(sql`lower(${jobs.location})`, `%${f.location.toLowerCase()}%`));
+  if (f.department) where.push(like(sql`lower(${jobs.department})`, `%${f.department.toLowerCase()}%`));
   if (f.remote) where.push(eq(jobs.remote, true));
 
   return db
@@ -64,14 +65,14 @@ export async function listCompanies(opts: { onlyHiring?: boolean } = {}) {
       name: companies.name,
       logoUrl: companies.logoUrl,
       website: companies.website,
-      jobCount: sql<number>`count(${jobs.id}) filter (where ${jobs.active})::int`.as("job_count"),
+      jobCount: sql<number>`coalesce(sum(case when ${jobs.active} then 1 else 0 end), 0)`.as("job_count"),
     })
     .from(companies)
     .leftJoin(jobs, eq(jobs.companyId, companies.id))
     .where(eq(companies.active, true))
     .groupBy(companies.id)
     .orderBy(companies.name);
-  return opts.onlyHiring ? rows.filter((r) => r.jobCount > 0) : rows;
+  return opts.onlyHiring ? rows.filter((r) => Number(r.jobCount) > 0) : rows;
 }
 
 export async function getCompany(slug: string) {

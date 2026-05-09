@@ -1,19 +1,16 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/d1";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import * as schema from "./schema";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+type DB = ReturnType<typeof drizzle<typeof schema>>;
 
-function getDb() {
-  if (_db) return _db;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is not set");
-  const client = postgres(url, { max: 5, prepare: false });
-  _db = drizzle(client, { schema });
-  return _db;
+export function getDb(): DB {
+  const env = getCloudflareContext().env as { DB?: D1Database };
+  if (!env.DB) throw new Error("D1 binding 'DB' not configured");
+  return drizzle(env.DB, { schema });
 }
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+export const db = new Proxy({} as DB, {
   get(_t, prop) {
     return Reflect.get(getDb() as object, prop);
   },

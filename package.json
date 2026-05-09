@@ -2,26 +2,31 @@
   "name": "startuplab-jobs",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": "20.x" },
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "build": "next build",
-    "start": "next start",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "sync": "tsx scripts/sync.ts"
+    "db:migrate-local": "wrangler d1 migrations apply startuplab-jobs --local",
+    "db:migrate-remote": "wrangler d1 migrations apply startuplab-jobs --remote"
   },
   "dependencies": {
-    "drizzle-orm": "^0.36.4",
+    "@neondatabase/serverless": "^1.1.0",
+    "@opennextjs/cloudflare": "^1.19.8",
+    "drizzle-orm": "^0.45.2",
     "next": "^15.1.0",
-    "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "wrangler": "^4.86.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260509.1",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

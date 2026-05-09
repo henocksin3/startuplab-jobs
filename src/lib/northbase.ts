@@ -1,15 +1,5 @@
-import postgres from "postgres";
-
-let cached: ReturnType<typeof postgres> | null = null;
-
-function getClient() {
-  const url = process.env.NORTHBASE_DATABASE_URL;
-  if (!url) throw new Error("NORTHBASE_DATABASE_URL is not set");
-  if (!cached) {
-    cached = postgres(url, { max: 3, prepare: false, ssl: "require", idle_timeout: 20 });
-  }
-  return cached;
-}
+import { neon } from "@neondatabase/serverless";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export interface NorthbaseCompany {
   airtableId: string | null;
@@ -21,29 +11,22 @@ export interface NorthbaseCompany {
   logoFileUrl: string | null;
   linkedinUrl: string | null;
   startupStatus: string[];
-  membershipDateIn: Date | null;
-  membershipDateOut: Date | null;
+  membershipDateIn: string | null;
+  membershipDateOut: string | null;
   acceleratorBatch: string | null;
-  investmentDate: Date | null;
+  investmentDate: string | null;
+}
+
+function getClient() {
+  const env = getCloudflareContext().env as { NORTHBASE_DATABASE_URL?: string };
+  const url = env.NORTHBASE_DATABASE_URL ?? process.env.NORTHBASE_DATABASE_URL;
+  if (!url) throw new Error("NORTHBASE_DATABASE_URL is not set");
+  return neon(url);
 }
 
 export async function fetchEverConnectedCompanies(): Promise<NorthbaseCompany[]> {
   const sql = getClient();
-  const rows = await sql<Array<{
-    airtable_id: string | null;
-    org_nr: string | null;
-    company_name: string;
-    website: string | null;
-    oneliner: string | null;
-    company_description: string | null;
-    logo_file_url: string | null;
-    linkedin_url: string | null;
-    startup_status: string[] | null;
-    sl_membership_date_in: Date | null;
-    sl_membership_date_out: Date | null;
-    accelerator_batch: string | null;
-    investment_date: Date | null;
-  }>>`
+  const rows = (await sql`
     SELECT
       airtable_id,
       org_nr,
@@ -72,21 +55,21 @@ export async function fetchEverConnectedCompanies(): Promise<NorthbaseCompany[]>
         OR investment_date IS NOT NULL
       )
     ORDER BY company_name
-  `;
+  `) as Array<Record<string, unknown>>;
 
   return rows.map((r) => ({
-    airtableId: r.airtable_id,
-    orgNr: r.org_nr,
-    companyName: r.company_name,
-    website: r.website,
-    oneliner: r.oneliner,
-    description: r.company_description,
-    logoFileUrl: r.logo_file_url,
-    linkedinUrl: r.linkedin_url,
-    startupStatus: r.startup_status ?? [],
-    membershipDateIn: r.sl_membership_date_in,
-    membershipDateOut: r.sl_membership_date_out,
-    acceleratorBatch: r.accelerator_batch,
-    investmentDate: r.investment_date,
+    airtableId: (r.airtable_id as string | null) ?? null,
+    orgNr: (r.org_nr as string | null) ?? null,
+    companyName: r.company_name as string,
+    website: (r.website as string | null) ?? null,
+    oneliner: (r.oneliner as string | null) ?? null,
+    description: (r.company_description as string | null) ?? null,
+    logoFileUrl: (r.logo_file_url as string | null) ?? null,
+    linkedinUrl: (r.linkedin_url as string | null) ?? null,
+    startupStatus: Array.isArray(r.startup_status) ? (r.startup_status as string[]) : [],
+    membershipDateIn: (r.sl_membership_date_in as string | null) ?? null,
+    membershipDateOut: (r.sl_membership_date_out as string | null) ?? null,
+    acceleratorBatch: (r.accelerator_batch as string | null) ?? null,
+    investmentDate: (r.investment_date as string | null) ?? null,
   }));
 }

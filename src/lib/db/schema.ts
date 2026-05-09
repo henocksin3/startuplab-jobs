@@ -1,6 +1,7 @@
-import { pgTable, text, timestamp, boolean, jsonb, integer, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
-export const companies = pgTable("companies", {
+export const companies = sqliteTable("companies", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   orgNr: text("org_nr"),
@@ -10,15 +11,15 @@ export const companies = pgTable("companies", {
   linkedinUrl: text("linkedin_url"),
   location: text("location"),
   description: text("description"),
-  startupStatus: jsonb("startup_status").$type<string[]>().notNull().default([]),
+  startupStatus: text("startup_status", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
   atsType: text("ats_type"),
-  atsConfig: jsonb("ats_config").$type<Record<string, unknown>>().notNull().default({}),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  atsConfig: text("ats_config", { mode: "json" }).$type<Record<string, unknown>>().notNull().default(sql`'{}'`),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
 
-export const jobs = pgTable(
+export const jobs = sqliteTable(
   "jobs",
   {
     id: text("id").primaryKey(),
@@ -29,13 +30,13 @@ export const jobs = pgTable(
     location: text("location"),
     department: text("department"),
     employmentType: text("employment_type"),
-    remote: boolean("remote").notNull().default(false),
+    remote: integer("remote", { mode: "boolean" }).notNull().default(false),
     description: text("description"),
     applyUrl: text("apply_url").notNull(),
-    postedAt: timestamp("posted_at", { withTimezone: true }),
-    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
-    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
-    active: boolean("active").notNull().default(true),
+    postedAt: integer("posted_at", { mode: "timestamp" }),
+    firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
   },
   (t) => ({
     bySource: uniqueIndex("jobs_company_source_external").on(t.companyId, t.source, t.externalId),
@@ -44,15 +45,15 @@ export const jobs = pgTable(
   }),
 );
 
-export const syncRuns = pgTable("sync_runs", {
+export const syncRuns = sqliteTable("sync_runs", {
   id: text("id").primaryKey(),
-  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
-  finishedAt: timestamp("finished_at", { withTimezone: true }),
-  ok: boolean("ok"),
+  startedAt: integer("started_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  finishedAt: integer("finished_at", { mode: "timestamp" }),
+  ok: integer("ok", { mode: "boolean" }),
   companiesProcessed: integer("companies_processed").notNull().default(0),
   jobsUpserted: integer("jobs_upserted").notNull().default(0),
   jobsDeactivated: integer("jobs_deactivated").notNull().default(0),
-  errors: jsonb("errors").$type<Array<{ company: string; error: string }>>().notNull().default([]),
+  errors: text("errors", { mode: "json" }).$type<Array<{ company: string; error: string }>>().notNull().default(sql`'[]'`),
 });
 
 export type Company = typeof companies.$inferSelect;

@@ -161,10 +161,10 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
   }
 
   const deactivatedCount = await db
-    .select({ c: sql<number>`count(*)::int` })
+    .select({ c: sql<number>`count(*)` })
     .from(jobs)
     .where(eq(jobs.active, false))
-    .then((r) => r[0]?.c ?? 0);
+    .then((r) => Number(r[0]?.c ?? 0));
 
   const summary: SyncSummary = {
     ok: errors.length === 0,

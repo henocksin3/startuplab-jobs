@@ -4,34 +4,31 @@ Self-hosted clone of jobs.startuplab.no — aggregates open positions from Start
 
 Replaces Getro for the core use case (aggregated job board across portfolio).
 
+Live: https://startuplab-jobs.startuplab.workers.dev
+
 ## Stack
 
 - **Next.js 15** (App Router) + TypeScript + Tailwind
-- **PostgreSQL** + Drizzle ORM
+- **Cloudflare Workers** via [@opennextjs/cloudflare](https://github.com/opennextjs/opennextjs-cloudflare)
+- **D1** (SQLite at edge) for jobs + companies, via Drizzle ORM
+- **Northbase (Neon Postgres)** for canonical Startuplab portfolio data, read via `@neondatabase/serverless` HTTP driver
 - **ATS adapters**: Teamtailor, Workable, BambooHR, Jobylon, Greenhouse, Lever, manual
-- **Deploy**: Railway (Next.js + managed Postgres + cron)
 
 ## How it works
 
-1. `data/companies.json` is the source of truth — each entry specifies a company and which ATS to pull from.
-2. `POST /api/sync` (auth: `Authorization: Bearer $SYNC_SECRET`) seeds companies and pulls jobs from every ATS adapter.
-3. Public pages (`/`, `/jobs/[id]`, `/companies`, `/companies/[slug]`) read from Postgres.
-4. Run sync on a schedule via Railway cron (every 1–6 hours).
+1. **Northbase (`sl_startups`)** is the canonical source of every company ever connected to Startuplab (~590, alumni included). The sync mirrors them into D1.
+2. **`src/lib/ats-configs.ts`** maps slugs to ATS configuration — only the subset of companies whose jobs we actually fetch.
+3. **`POST /api/sync`** (auth: `Authorization: Bearer $SYNC_SECRET`) pulls from Northbase, runs adapters, upserts into D1.
+4. Public pages read from D1.
 
 Apply buttons link out to the original ATS — no application data is collected here. UTM parameters are stripped.
 
-## Adding a company
+## Adding/updating a company
 
-Edit `data/companies.json`:
+Edit `src/lib/ats-configs.ts`:
 
-```json
-{
-  "slug": "acme",
-  "name": "Acme",
-  "website": "https://acme.com",
-  "atsType": "teamtailor",
-  "atsConfig": { "subdomain": "acme" }
-}
+```ts
+acme: { atsType: "teamtailor", atsConfig: { subdomain: "acme" } }
 ```
 
 Adapter config keys:
@@ -48,30 +45,38 @@ After editing, re-deploy or hit `/api/sync`.
 ## Local dev
 
 ```bash
-cp .env.example .env  # edit DATABASE_URL + SYNC_SECRET
 npm install
-npm run db:push       # create tables
-npm run sync          # seed companies + pull jobs
-npm run dev
+npx wrangler d1 migrations apply startuplab-jobs --local  # apply migrations to local D1
+npm run dev                                                # next dev (D1 binding NOT available; Northbase requires NORTHBASE_DATABASE_URL env)
+# or:
+npm run preview                                            # full Workers runtime via wrangler dev
 ```
 
-## Deploy to Railway
+## Deploy
 
-1. Push repo to GitHub
-2. Create Railway project, add Postgres plugin → exposes `DATABASE_URL`
-3. Add web service from this repo, set env vars: `DATABASE_URL`, `SYNC_SECRET`
-4. After first deploy, run once: `npm run db:push && npm run sync` (Railway shell)
-5. Add a Cron service (or Railway "scheduled command") that hits:
-   ```
-   curl -X POST -H "Authorization: Bearer $SYNC_SECRET" https://YOUR_DOMAIN/api/sync
-   ```
-   Recommended cadence: every 2 hours.
+```bash
+npm run deploy   # opennextjs-cloudflare build + deploy
+```
+
+Secrets are set via `wrangler secret put SYNC_SECRET` and `wrangler secret put NORTHBASE_DATABASE_URL`.
+
+After schema changes:
+```bash
+npm run db:generate            # writes drizzle/*.sql
+npm run db:migrate-remote      # applies to remote D1
+```
+
+## Cron
+
+Cloudflare Workers cron isn't wired in yet — to schedule sync, either:
+- add a `triggers.crons` block + `scheduled` handler in a custom worker entry, or
+- run a curl from any external scheduler.
 
 ## Cost
 
-- Railway: ~$5–10/mo (web + Postgres on hobby plan)
-- ATS API calls: free
-- Replaces Getro pricing entirely
+- Cloudflare Workers free tier (100k req/day) handles this comfortably.
+- D1 free tier: 5GB storage, 5M reads/day, 100k writes/day.
+- ATS API calls: free.
 
 ## Roadmap
 
