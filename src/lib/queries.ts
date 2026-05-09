@@ -57,8 +57,8 @@ export async function getJob(id: string) {
   return rows[0] ?? null;
 }
 
-export async function listCompanies() {
-  return db
+export async function listCompanies(opts: { onlyHiring?: boolean } = {}) {
+  const rows = await db
     .select({
       slug: companies.slug,
       name: companies.name,
@@ -71,6 +71,7 @@ export async function listCompanies() {
     .where(eq(companies.active, true))
     .groupBy(companies.id)
     .orderBy(companies.name);
+  return opts.onlyHiring ? rows.filter((r) => r.jobCount > 0) : rows;
 }
 
 export async function getCompany(slug: string) {

@@ -21,7 +21,7 @@ export default async function Page({ searchParams }: Props) {
     }),
     getDistinctLocations(),
     getDistinctDepartments(),
-    listCompanies(),
+    listCompanies({ onlyHiring: true }),
   ]);
 
   return (
