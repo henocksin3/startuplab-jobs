@@ -27,17 +27,19 @@ export default async function Page({ searchParams }: Props) {
   ]);
 
   return (
-    <div className="max-w-content mx-auto px-6 py-10">
-      <section className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight">
-          Work for Norway's most <span className="text-sl-red">exciting</span> tech startups.
-        </h1>
-        <p className="mt-3 text-sl-warm max-w-2xl">
-          {jobs.length} open positions across {companies.length} Startuplab portfolio companies.
-        </p>
+    <div className="max-w-content mx-auto px-6 py-6">
+      <section className="flex flex-wrap items-end justify-between gap-4 mb-5">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight">
+            Work for Norway's most <span className="text-sl-red">exciting</span> tech startups.
+          </h1>
+          <p className="text-sm text-sl-warm mt-1">
+            <span className="font-bold text-sl-ink">{jobs.length}</span> open positions across {companies.length} portfolio companies.
+          </p>
+        </div>
       </section>
 
-      <section className="mb-6">
+      <section className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-sl-haze/40 py-3 -mx-6 px-6 mb-5">
         <Filters
           locations={locations.filter((l) => l.location).map((l) => ({ value: l.location!, label: l.location! }))}
           departments={departments.filter((d) => d.department).map((d) => ({ value: d.department!, label: d.department! }))}
@@ -45,9 +47,11 @@ export default async function Page({ searchParams }: Props) {
         />
       </section>
 
-      <section className="grid gap-3">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {jobs.length === 0 && (
-          <div className="text-center py-16 text-sl-warm">No jobs match. Try clearing filters.</div>
+          <div className="col-span-full text-center py-16 text-sl-warm">
+            No jobs match. Try clearing filters.
+          </div>
         )}
         {jobs.map((j) => (
           <JobCard

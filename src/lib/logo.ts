@@ -2,11 +2,22 @@ import { websiteDomain } from "./slug";
 
 const DDG_PLACEHOLDER_BYTES = 1478;
 
+// Per-company logo-domain overrides. Northbase's `website` is the legal domain (Brønnøysund),
+// which sometimes lacks a favicon — companies use a different brand domain in practice.
+const LOGO_DOMAIN_OVERRIDES: Record<string, string> = {
+  spoor: "spoor.ai",
+  "21paper": "21paper.com",
+  joymo: "joymo.tv",
+  "no-isolation": "noisolation.com",
+  "dintero-as": "dintero.com",
+};
+
 // Google's S2 favicon service: returns 16×16 generic globe for unknowns, 64+ for sites with
 // a real favicon when sz=128 is requested. Easier to differentiate via naturalWidth on the client
 // than DDG's uniform 48×48 placeholder.
-export function ddgIconUrl(website: string | null | undefined): string | null {
-  const d = websiteDomain(website ?? null);
+export function ddgIconUrl(website: string | null | undefined, slug?: string): string | null {
+  const override = slug && LOGO_DOMAIN_OVERRIDES[slug];
+  const d = override || websiteDomain(website ?? null);
   return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=128` : null;
 }
 

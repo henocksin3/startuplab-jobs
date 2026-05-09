@@ -24,5 +24,5 @@ export default {
       maxWidth: { content: "1200px" },
     },
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/typography")],
 } satisfies Config;

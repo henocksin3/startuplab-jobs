@@ -10,6 +10,15 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const company = await getCompany(slug);
+  return {
+    title: company?.name ?? "Company",
+    description: company?.description ?? undefined,
+  };
+}
+
 export default async function CompanyPage({ params }: Props) {
   const { slug } = await params;
   const company = await getCompany(slug);

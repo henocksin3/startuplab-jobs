@@ -18,6 +18,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "@opennextjs/cloudflare": "^1.19.8",
+    "chalk": "^4.1.2",
     "drizzle-orm": "^0.45.2",
     "next": "^15.1.0",
     "react": "^19.0.0",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260509.1",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

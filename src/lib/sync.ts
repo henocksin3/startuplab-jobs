@@ -54,7 +54,7 @@ export async function syncCompaniesFromNorthbase(atsConfigs: AtsConfigMap): Prom
     const ats = atsConfigs[slug];
     if (ats) withAts++;
     const website = normalizeWebsite(r.website);
-    const logo = ddgIconUrl(website);
+    const logo = ddgIconUrl(website, slug);
 
     const baseCols = {
       orgNr: r.orgNr,
