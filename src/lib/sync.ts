@@ -199,6 +199,11 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
         .update(jobs)
         .set({ active: false })
         .where(and(eq(jobs.companyId, co.id), eq(jobs.source, adapter.name), lt(jobs.lastSeenAt, cutoff)));
+      // If a company switched ats source, deactivate rows from the old source.
+      await db
+        .update(jobs)
+        .set({ active: false })
+        .where(and(eq(jobs.companyId, co.id), sql`${jobs.source} != ${adapter.name}`));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       errors.push({ company: co.slug, error: msg });

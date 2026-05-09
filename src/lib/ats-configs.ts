@@ -49,18 +49,9 @@ export const atsConfigs: AtsConfigMap = {
     },
   },
 
-  // Manual
+  // Tally form (form builder used by some companies that lack a dedicated career page)
   otee: {
-    atsType: "manual",
-    atsConfig: {
-      jobs: [
-        {
-          externalId: "lead-ai-engineer-2026",
-          title: "Lead AI Engineer",
-          location: "Oslo, Norway",
-          applyUrl: "https://tally.so/r/3jddl1",
-        },
-      ],
-    },
+    atsType: "tally",
+    atsConfig: { formId: "3jddl1", location: "Oslo, Norway (or remote, CET/CEST)" },
   },
 };
