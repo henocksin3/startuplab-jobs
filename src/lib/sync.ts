@@ -211,6 +211,15 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
     .set({ active: false })
     .where(sql`lower(${jobs.title}) like 'demo %' or lower(${jobs.title}) like 'demo–%' or lower(${jobs.title}) like 'demo —%' or lower(${jobs.title}) like 'demo - %' or lower(${jobs.title}) like 'demo–%'`);
 
+  // Hide jobs that haven't been refreshed by the company in over a year. These are typically
+  // forgotten postings on otherwise abandoned career pages.
+  const STALENESS_DAYS = 365;
+  const staleCutoff = Math.floor(Date.now() / 1000) - STALENESS_DAYS * 86400;
+  await db
+    .update(jobs)
+    .set({ active: false })
+    .where(sql`${jobs.postedAt} is not null and ${jobs.postedAt} < ${staleCutoff}`);
+
   const deactivatedCount = await db
     .select({ c: sql<number>`count(*)` })
     .from(jobs)
