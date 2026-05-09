@@ -67,6 +67,8 @@ export default async function CompanyPage({ params }: Props) {
             seniority={j.seniority as Seniority | null}
             remote={j.remote}
             postedAt={j.postedAt}
+            applyUrl={j.applyUrl}
+            hasDescription={Number(j.hasDescription) === 1}
             company={j.company}
           />
         ))}

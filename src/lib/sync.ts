@@ -147,7 +147,9 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
         alreadyEnriched,
       });
       processed++;
+      const TITLE_BLOCKLIST = /^\s*(demo[\s–—–-]|test\s|placeholder)/i;
       for (const j of fetched) {
+        if (TITLE_BLOCKLIST.test(j.title)) continue;
         const id = `job_${co.slug}_${adapter.name}_${j.externalId}`;
         const seniority = detectSeniority(j.title);
         const insertVals = {
@@ -202,6 +204,12 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
       errors.push({ company: co.slug, error: msg });
     }
   }
+
+  // Catch any DEMO/test rows that pre-date the title blocklist or were inserted by a previous sync.
+  await db
+    .update(jobs)
+    .set({ active: false })
+    .where(sql`lower(${jobs.title}) like 'demo %' or lower(${jobs.title}) like 'demo–%' or lower(${jobs.title}) like 'demo —%' or lower(${jobs.title}) like 'demo - %' or lower(${jobs.title}) like 'demo–%'`);
 
   const deactivatedCount = await db
     .select({ c: sql<number>`count(*)` })

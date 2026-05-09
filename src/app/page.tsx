@@ -64,6 +64,8 @@ export default async function Page({ searchParams }: Props) {
             seniority={j.seniority as Seniority | null}
             remote={j.remote}
             postedAt={j.postedAt}
+            applyUrl={j.applyUrl}
+            hasDescription={Number(j.hasDescription) === 1}
             company={j.company}
           />
         ))}

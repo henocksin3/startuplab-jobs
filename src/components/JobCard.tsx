@@ -12,6 +12,8 @@ interface Props {
   seniority: Seniority | string | null;
   remote: boolean;
   postedAt?: Date | string | null;
+  applyUrl?: string;
+  hasDescription?: boolean;
   company: {
     slug: string;
     name: string;
@@ -21,7 +23,7 @@ interface Props {
   };
 }
 
-export function JobCard({ id, title, location, department, employmentType, seniority, remote, postedAt, company }: Props) {
+export function JobCard({ id, title, location, department, employmentType, seniority, remote, postedAt, applyUrl, hasDescription, company }: Props) {
   const posted = relativeTime(postedAt);
   const sLabel = seniorityLabel(seniority as Seniority | null);
   const chips = [
@@ -31,11 +33,25 @@ export function JobCard({ id, title, location, department, employmentType, senio
     .filter((c, i, a) => c && a.indexOf(c) === i)
     .slice(0, 3);
 
+  // When the description is missing, the internal detail page would be near-empty.
+  // Send the user straight to the company's apply page instead.
+  const goExternal = !hasDescription && !!applyUrl;
+  const wrapperClass =
+    "group flex flex-col h-full border border-sl-haze/60 hover:border-sl-red transition-colors p-4 bg-white";
+  const Wrapper = goExternal
+    ? ({ children }: { children: React.ReactNode }) => (
+        <a href={applyUrl} target="_blank" rel="noreferrer noopener" className={wrapperClass}>
+          {children}
+        </a>
+      )
+    : ({ children }: { children: React.ReactNode }) => (
+        <Link href={`/jobs/${id}`} className={wrapperClass}>
+          {children}
+        </Link>
+      );
+
   return (
-    <Link
-      href={`/jobs/${id}`}
-      className="group flex flex-col h-full border border-sl-haze/60 hover:border-sl-red transition-colors p-4 bg-white"
-    >
+    <Wrapper>
       <div className="flex items-start gap-3 mb-2">
         <CompanyLogo name={company.name} logoUrl={company.logoUrl} size={36} />
         <div className="min-w-0 flex-1">
@@ -68,6 +84,6 @@ export function JobCard({ id, title, location, department, employmentType, senio
           ))}
         </div>
       )}
-    </Link>
+    </Wrapper>
   );
 }

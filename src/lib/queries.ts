@@ -35,6 +35,7 @@ export async function listActiveJobs(f: JobFilter = {}) {
       applyUrl: jobs.applyUrl,
       postedAt: jobs.postedAt,
       lastSeenAt: jobs.lastSeenAt,
+      hasDescription: sql<number>`case when ${jobs.description} is not null and length(${jobs.description}) > 0 then 1 else 0 end`.as("has_description"),
       company: {
         slug: companies.slug,
         name: companies.name,
