@@ -14,6 +14,9 @@ export interface AdapterContext {
   companyId: string;
   companySlug: string;
   config: Record<string, unknown>;
+  /** Set of externalId strings whose description is already stored in the DB.
+   * Adapters that do per-job enrichment fetches should skip these to save subrequest budget. */
+  alreadyEnriched?: Set<string>;
 }
 
 export interface Adapter {

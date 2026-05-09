@@ -45,6 +45,7 @@ export const atsConfigs: AtsConfigMap = {
       url: "https://www.dintero.com/careers",
       linkPattern: "https://emp\\.jobylon\\.com/jobs/",
       stripPrefix: "Dintero ",
+      enrichJsonLd: true,
     },
   },
 

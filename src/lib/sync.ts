@@ -107,6 +107,19 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
     .from(companies)
     .where(and(eq(companies.active, true), sql`${companies.atsType} is not null`));
 
+  // Process detail-fetching adapters first so they get the subrequest budget on Workers free plan.
+  const adapterPriority: Record<string, number> = {
+    bamboohr: 0,
+    "scrape-careers": 1,
+    workable: 2,
+    jobylon: 3,
+    greenhouse: 4,
+    lever: 5,
+    teamtailor: 6,
+    manual: 7,
+  };
+  targets.sort((a, b) => (adapterPriority[a.atsType ?? ""] ?? 99) - (adapterPriority[b.atsType ?? ""] ?? 99));
+
   const errors: Array<{ company: string; error: string }> = [];
   let upserted = 0;
   let processed = 0;
@@ -119,10 +132,19 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
       continue;
     }
     try {
+      // Build set of externalIds whose description is already in DB.
+      // Adapters skip per-job detail fetches for these to save subrequest budget.
+      const existing = await db
+        .select({ externalId: jobs.externalId, hasDesc: sql<number>`case when ${jobs.description} is not null then 1 else 0 end` })
+        .from(jobs)
+        .where(and(eq(jobs.companyId, co.id), eq(jobs.source, adapter.name)));
+      const alreadyEnriched = new Set(existing.filter((r) => Number(r.hasDesc) === 1).map((r) => r.externalId));
+
       const fetched = await adapter.fetchJobs({
         companyId: co.id,
         companySlug: co.slug,
         config: co.atsConfig,
+        alreadyEnriched,
       });
       processed++;
       for (const j of fetched) {
@@ -145,11 +167,21 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
           lastSeenAt: new Date(),
           active: true,
         };
-        const updateVals = { ...insertVals };
-        delete (updateVals as Partial<typeof insertVals>).id;
-        delete (updateVals as Partial<typeof insertVals>).companyId;
-        delete (updateVals as Partial<typeof insertVals>).externalId;
-        delete (updateVals as Partial<typeof insertVals>).source;
+        const updateVals: Record<string, unknown> = {
+          title: insertVals.title,
+          remote: insertVals.remote,
+          applyUrl: insertVals.applyUrl,
+          lastSeenAt: insertVals.lastSeenAt,
+          active: insertVals.active,
+        };
+        // Only update fields that the adapter actually returned (non-null). This preserves
+        // detail-only data (description, posted_at, location) for jobs we skipped enriching.
+        if (j.location !== undefined && j.location !== null) updateVals.location = j.location;
+        if (j.department !== undefined && j.department !== null) updateVals.department = j.department;
+        if (j.employmentType !== undefined && j.employmentType !== null) updateVals.employmentType = j.employmentType;
+        if (seniority !== null) updateVals.seniority = seniority;
+        if (j.description !== undefined && j.description !== null) updateVals.description = j.description;
+        if (j.postedAt) updateVals.postedAt = j.postedAt;
         await db
           .insert(jobs)
           .values(insertVals)
