@@ -31,7 +31,7 @@ export default async function Page({ searchParams }: Props) {
       <section className="flex flex-wrap items-end justify-between gap-4 mb-5">
         <div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-            Work for Norway's most <span className="text-sl-red">exciting</span> tech startups.
+            Work for Norway's most <span className="text-sl-red">ambitious</span> tech startups.
           </h1>
           <p className="text-sm text-sl-warm mt-1">
             <span className="font-bold text-sl-ink">{jobs.length}</span> open positions across {companies.length} portfolio companies.

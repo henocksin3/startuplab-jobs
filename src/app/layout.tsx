@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   icons: { icon: "/brand/sl-symbol-red.svg" },
   openGraph: {
     title: "Startuplab Jobs",
-    description: "Work for Norway's most exciting tech startups.",
+    description: "Work for Norway's most ambitious tech startups.",
     type: "website",
   },
 };
