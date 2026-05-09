@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "startuplab-jobs-cron",
+  "main": "worker.ts",
+  "compatibility_date": "2025-04-01",
+  "triggers": {
+    "crons": ["0 */2 * * *"]
+  },
+  "vars": {
+    "TARGET_URL": "https://startuplab-jobs.startuplab.workers.dev/api/sync"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

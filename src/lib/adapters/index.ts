@@ -6,6 +6,7 @@ import { jobylonAdapter } from "./jobylon";
 import { greenhouseAdapter } from "./greenhouse";
 import { leverAdapter } from "./lever";
 import { manualAdapter } from "./manual";
+import { scrapeCareersAdapter } from "./scrape-careers";
 
 export const adapters: Record<string, Adapter> = {
   teamtailor: teamtailorAdapter,
@@ -15,6 +16,7 @@ export const adapters: Record<string, Adapter> = {
   greenhouse: greenhouseAdapter,
   lever: leverAdapter,
   manual: manualAdapter,
+  "scrape-careers": scrapeCareersAdapter,
 };
 
 export function getAdapter(type: string): Adapter | null {
