@@ -8,8 +8,10 @@ import { leverAdapter } from "./lever";
 import { manualAdapter } from "./manual";
 import { scrapeCareersAdapter } from "./scrape-careers";
 import { tallyAdapter } from "./tally";
+import { ashbyAdapter } from "./ashby";
 
 export const adapters: Record<string, Adapter> = {
+  ashby: ashbyAdapter,
   teamtailor: teamtailorAdapter,
   workable: workableAdapter,
   bamboohr: bamboohrAdapter,

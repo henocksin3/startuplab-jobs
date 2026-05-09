@@ -111,12 +111,14 @@ export async function runSync(atsConfigs: AtsConfigMap): Promise<SyncSummary> {
   const adapterPriority: Record<string, number> = {
     bamboohr: 0,
     "scrape-careers": 1,
-    workable: 2,
-    jobylon: 3,
-    greenhouse: 4,
-    lever: 5,
-    teamtailor: 6,
-    manual: 7,
+    tally: 2,
+    workable: 3,
+    ashby: 4,
+    greenhouse: 5,
+    jobylon: 6,
+    lever: 7,
+    teamtailor: 8,
+    manual: 9,
   };
   targets.sort((a, b) => (adapterPriority[a.atsType ?? ""] ?? 99) - (adapterPriority[b.atsType ?? ""] ?? 99));
 

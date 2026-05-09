@@ -28,6 +28,8 @@ export const atsConfigs: AtsConfigMap = {
   bruce: { atsType: "teamtailor", atsConfig: { subdomain: "bruce" } },
   antagonist: { atsType: "teamtailor", atsConfig: { subdomain: "antagonist" } },
 
+  "glint-solar": { atsType: "teamtailor", atsConfig: { customDomain: "careers.glintsolar.com" } },
+
   // Workable
   kahoot: { atsType: "workable", atsConfig: { account: "kahoot" } },
   strise: { atsType: "workable", atsConfig: { account: "strise" } },
@@ -37,6 +39,25 @@ export const atsConfigs: AtsConfigMap = {
   zivid: { atsType: "bamboohr", atsConfig: { subdomain: "zivid" } },
   muybridge: { atsType: "bamboohr", atsConfig: { subdomain: "muybridge" } },
   joymo: { atsType: "bamboohr", atsConfig: { subdomain: "joymo" } },
+  huddly: { atsType: "bamboohr", atsConfig: { subdomain: "huddly" } },
+  favrit: { atsType: "bamboohr", atsConfig: { subdomain: "favrit" } },
+  alfred: { atsType: "bamboohr", atsConfig: { subdomain: "alfred" } },
+  intelecy: { atsType: "bamboohr", atsConfig: { subdomain: "intelecy" } },
+
+  // Greenhouse
+  decisions: { atsType: "greenhouse", atsConfig: { board: "decisions" } },
+  current: { atsType: "greenhouse", atsConfig: { board: "current" } },
+  grin: { atsType: "greenhouse", atsConfig: { board: "grin" } },
+  manifold: { atsType: "greenhouse", atsConfig: { board: "manifoldai" } },
+
+  // Ashby
+  sanity: { atsType: "ashby", atsConfig: { board: "sanity" } },
+  letta: { atsType: "ashby", atsConfig: { board: "letta" } },
+  adapt: { atsType: "ashby", atsConfig: { board: "adapt" } },
+  rewind: { atsType: "ashby", atsConfig: { board: "rewind" } },
+
+  // Tally form
+  sokkel: { atsType: "tally", atsConfig: { formId: "wvKvxA" } },
 
   // Scrape careers page (Jobylon)
   "dintero-as": {

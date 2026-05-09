@@ -1,7 +1,9 @@
 import { Adapter, AdapterContext, AdapterError, NormalizedJob, stripUtm } from "./types";
 
 interface TTConfig {
-  subdomain: string;
+  subdomain?: string;
+  /** Custom career domain (e.g. careers.glintsolar.com). Use either this or `subdomain`. */
+  customDomain?: string;
 }
 
 function decodeXmlEntities(s: string): string {
@@ -51,17 +53,21 @@ export const teamtailorAdapter: Adapter = {
   name: "teamtailor",
   async fetchJobs(ctx: AdapterContext): Promise<NormalizedJob[]> {
     const cfg = ctx.config as unknown as TTConfig;
-    if (!cfg.subdomain) throw new AdapterError(`teamtailor: missing subdomain for ${ctx.companySlug}`);
+    if (cfg.customDomain) return fetchTeamtailorRss(`https://${cfg.customDomain}/jobs.rss`, cfg.customDomain);
+    if (!cfg.subdomain) throw new AdapterError(`teamtailor: missing subdomain or customDomain for ${ctx.companySlug}`);
     return fetchTeamtailorBySubdomain(cfg.subdomain);
   },
 };
 
 export async function fetchTeamtailorBySubdomain(subdomain: string): Promise<NormalizedJob[]> {
-  const url = `https://${subdomain}.teamtailor.com/jobs.rss`;
+  return fetchTeamtailorRss(`https://${subdomain}.teamtailor.com/jobs.rss`, subdomain);
+}
+
+async function fetchTeamtailorRss(url: string, label: string): Promise<NormalizedJob[]> {
   const res = await fetch(url, { headers: { Accept: "application/rss+xml,application/xml" } });
-  if (!res.ok) throw new AdapterError(`teamtailor ${subdomain}: HTTP ${res.status}`);
+  if (!res.ok) throw new AdapterError(`teamtailor ${label}: HTTP ${res.status}`);
   const xml = await res.text();
-  if (!xml.includes("<rss")) throw new AdapterError(`teamtailor ${subdomain}: invalid RSS`);
+  if (!xml.includes("<rss")) throw new AdapterError(`teamtailor ${label}: invalid RSS`);
 
   const out: NormalizedJob[] = [];
   for (const item of getAllItems(xml)) {
